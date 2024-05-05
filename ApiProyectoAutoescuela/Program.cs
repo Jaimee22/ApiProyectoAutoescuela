@@ -1,7 +1,9 @@
 using ApiProyectoAutoescuela.Data;
 using ApiProyectoAutoescuela.Helpers;
 using ApiProyectoAutoescuela.Repositories;
+using Azure.Security.KeyVault.Secrets;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Azure;
 using Microsoft.OpenApi.Models;
 using NSwag;
 using NSwag.Generation.Processors.Security;
@@ -15,11 +17,20 @@ builder.Services.AddSingleton<HelperActionServicesOAuth>(helper);
 builder.Services.AddAuthentication(helper.GetAuthenticateSchema()).AddJwtBearer(helper.GetJwtBearerOptions());
 
 
-
+builder.Services.AddAzureClients(factory =>
+{
+    factory.AddSecretClient
+    (builder.Configuration.GetSection("KeyVault"));
+});
+SecretClient secretClient =
+builder.Services.BuildServiceProvider().GetService<SecretClient>();
+KeyVaultSecret secret =
+    await secretClient.GetSecretAsync("SqlAzure");
+string connectionString = secret.Value;
 
 
 // Add services to the container.ç
-string connectionString = builder.Configuration.GetConnectionString("SqlAzure");
+//string connectionString = builder.Configuration.GetConnectionString("SqlAzure");
 builder.Services.AddTransient<RepositoryAutoescuela>();
 builder.Services.AddDbContext<AutoescuelaContext>(options => options.UseSqlServer(connectionString));
 
